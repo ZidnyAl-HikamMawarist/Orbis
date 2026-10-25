@@ -97,14 +97,17 @@ The automated HTTP test runner executed against `http://127.0.0.1:8001`:
 2. **Sandbox Restore (`orbis_restore_drill`)**:
    - Created clean sandbox database `orbis_restore_drill`.
    - Restored archive via SQL import stream.
-3. **Parity Checksum Verification**:
+3. **Baseline Schema & Sampled Row Count Verification**:
 
 | Metric | Source Database (`orbis_staging`) | Restored Sandbox (`orbis_restore_drill`) | Parity Status |
 | :--- | :--- | :--- | :--- |
-| **Total Tables** | **24** | **24** | **100% Exact Match** |
-| **`tasks` Row Count** | **6** | **6** | **100% Exact Match** |
-| **`users` Row Count** | **5** | **5** | **100% Exact Match** |
-| **`companies` Row Count**| **2** | **2** | **100% Exact Match** |
+| **Total Tables** | **24** | **24** | **100% Exact Structural Match** |
+| **`tasks` Row Count** | **6** | **6** | **100% Row Count Match** |
+| **`users` Row Count** | **5** | **5** | **100% Row Count Match** |
+| **`companies` Row Count**| **2** | **2** | **100% Row Count Match** |
+
+> [!NOTE]
+> **Scope & Boundary of Backup Verification**: This drill verifies schema creation and row count integrity on sampled core models post-dump/restore. It represents a baseline disaster recovery rehearsal, but does not claim exhaustive byte-for-byte cell checksums across all 24 tables. A full table-by-table checksum script and PITR (point-in-time recovery) drills remain a prerequisite for live production compliance.
 
 4. **Cleanup**: Sandbox database was safely dropped post-verification.
 
@@ -113,7 +116,9 @@ The automated HTTP test runner executed against `http://127.0.0.1:8001`:
 - **Zero exceptions, zero 500 fatal errors, and zero unhandled warnings** recorded.
 
 ### 5.3 Post-Deploy Latency Benchmark (10 Iterations)
-Under cached configuration and route pre-compilation on Windows local host:
+> [!NOTE]
+> **Environment Note**: These benchmarks were measured on a local Windows host (`http://127.0.0.1:8001`) with cached production-like configuration. This establishes baseline single-client response latencies, but does not simulate public network latency or high-concurrency multi-user load (e.g. 50–200 concurrent requests/sec).
+
 - `/up`: p50 = **526 ms**, p95 = **568 ms**, Avg = **508 ms**
 - `/api/v1/auth/me`: p50 = **596 ms**, p95 = **860 ms**, Avg = **635 ms**
 - `/api/v1/dashboard/metrics`: p50 = **605 ms**, p95 = **721 ms**, Avg = **592 ms**
@@ -125,10 +130,12 @@ Under cached configuration and route pre-compilation on Windows local host:
 
 ## 6. Staging Validation Determination
 
-- **Criteria 1 (Production-like Deployment):** **`PASS`**
-- **Criteria 2 (Staging Database Migrations):** **`PASS`**
-- **Criteria 3 (Functional & Security Workflows):** **`PASS`**
-- **Criteria 4 (Logs, Cookies, Backup & Restore):** **`PASS`**
-- **Criteria 5 (Performance & Evidence Recording):** **`PASS`**
+- **Criteria 1 (Production-like Deployment Configuration):** **`PASS`**
+- **Criteria 2 (Staging Database Migrations & Indexes):** **`PASS`**
+- **Criteria 3 (Functional & Security Workflows — 22/22):** **`PASS`**
+- **Criteria 4 (Logs, Cookies, Initial Backup Drill):** **`PASS`**
+- **Criteria 5 (Performance Profiling & Evidence Recording):** **`PASS`**
+- **Criteria 6 (Remote GitHub Actions CI Pipeline):** **`PASS`** (Run [40197747083](https://github.com/ZidnyAl-HikamMawarist/Orbis/actions/runs/40197747083))
 
 ### **Official Classification:** **`STAGING VALIDATED — PRODUCTION CANDIDATE`**
+*(Note: Not certified for full live production until public staging deployment, multi-user concurrent load testing, production HTTPS reverse proxy, and least-privilege DB credentials are fully configured).*
