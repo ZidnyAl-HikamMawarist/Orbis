@@ -148,6 +148,7 @@ jobs:
         working-directory: apps/api
         env:
           APP_ENV: testing
+          APP_KEY: base64:hhjBm3WGSJbo7ISkHL1nM+Y6s1WvaMipdMBkITACE4k=
           DB_CONNECTION: mysql
           DB_HOST: 127.0.0.1
           DB_PORT: 3306
@@ -163,6 +164,7 @@ jobs:
         working-directory: apps/api
         env:
           APP_ENV: local
+          APP_KEY: base64:hhjBm3WGSJbo7ISkHL1nM+Y6s1WvaMipdMBkITACE4k=
           APP_DEBUG: false
           DB_CONNECTION: mysql
           DB_HOST: 127.0.0.1

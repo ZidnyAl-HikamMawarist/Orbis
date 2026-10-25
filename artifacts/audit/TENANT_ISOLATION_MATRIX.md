@@ -1,7 +1,13 @@
 # ORBIS — Multi-Tenant Isolation & Authorization Matrix
 
 ## 1. Executive Summary
-This document establishes the verified isolation boundaries across all system endpoints, resources, database models, and export channels. Each resource has been tested for negative authorization (IDOR / BOLA) using distinct tenant actors (Company A vs. Company B).
+
+This document establishes the verified isolation boundaries across all system endpoints, resources, database models, and export channels. Each resource has been validated for negative authorization (IDOR / BOLA) using distinct tenant actors (Company A: Nusantara Retail Group vs. Company B: Borneo Logistics Corp).
+
+Multi-tenant isolation is enforced across three distinct layers:
+1. **Backend Database & ORM Scoping**: Enforced via global `#[ScopedBy([TenantScope::class])]` and foreign key composite integrity constraints (`fk_*_same_company`).
+2. **Form Request & Controller Validation**: `Rule::exists` and `Rule::unique` closures with strict `where('company_id', $companyId)`.
+3. **Frontend DOM & API Execution**: Validated via Playwright E2E browser tests on Chromium Desktop and Mobile (Journey I).
 
 ---
 
@@ -18,14 +24,36 @@ This document establishes the verified isolation boundaries across all system en
 | `/api/v1/tasks` | `POST` | Task | Foreign Project Injection | `Rule::exists('projects')->where('company_id', ...)` | `test_user_cannot_assign_task_to_foreign_project_id` | **PASS (422)** |
 | `/api/v1/tasks` | `POST` | Task | Foreign Dept Injection | `Rule::exists('departments')->where('company_id', ...)` | `test_user_cannot_assign_task_to_foreign_department_id` | **PASS (422)** |
 | `/api/v1/projects/{id}` | `GET` | Project | Model `#[ScopedBy(TenantScope)]` | Global `TenantScope` + `ProjectPolicy::view` | `test_user_cannot_read_project_of_another_company_by_direct_id` | **PASS (404)** |
+| `/api/v1/projects` | `POST` | Project | Foreign Branch Injection | `Rule::exists('branches')->where('company_id', ...)` | Tested in ProjectTaskTest | **PASS (422)** |
 | `/api/v1/members/{id}/role` | `PUT` | CompanyUser | Server session `company_id` | `where('company_id', $companyId)->findOrFail()` | `test_user_cannot_update_role_of_another_company_member` | **PASS (404)** |
 | `/api/v1/tasks?branch_id={id}` | `GET` | Task Filter | Model `#[ScopedBy(TenantScope)]` | Scoped query `where('company_id', ...)` | `test_task_listing_filtered_by_foreign_branch_returns_empty` | **PASS (200, 0 records)** |
-| `/api/v1/reports/tasks-csv` | `GET` | CSV Export | Server session `company_id` | `Task::where('company_id', ...)->chunk()` | `tc_kpi_tasks_csv_export_enforces_tenant_boundary` | **PASS (200, filtered)** |
-| `/api/v1/dashboard/metrics` | `GET` | Dashboard KPI | Model `#[ScopedBy(TenantScope)]` | Multi-table scoped aggregates | `test_tc_kpi_06_foreign_branch_filter_returns_404` | **PASS (404 on foreign)** |
+| `/api/v1/reports/tasks-csv` | `GET` | CSV Export | Server session `company_id` | `Task::where('company_id', ...)->chunk()` | `tasks_csv_export_enforces_tenant_boundary` | **PASS (200, filtered)** |
+| `/api/v1/dashboard/metrics` | `GET` | Dashboard KPI | Model `#[ScopedBy(TenantScope)]` | Multi-table scoped aggregates | `foreign_branch_filter_returns_404` | **PASS (404 on foreign)** |
+| `/api/v1/branches/{id}` | `GET` | Branch | Model `#[ScopedBy(TenantScope)]` | Global `TenantScope` + `BranchPolicy::view` | Tested in OrganizationTest | **PASS (404 on foreign)** |
+| `/api/v1/departments/{id}` | `GET` | Department | Model `#[ScopedBy(TenantScope)]` | Global `TenantScope` + `DepartmentPolicy::view` | Tested in OrganizationTest | **PASS (404 on foreign)** |
+| `/api/v1/alerts` | `GET` | Alert | Model `#[ScopedBy(TenantScope)]` | Scoped query `where('company_id', ...)` | Tested in KpiDashboardTest | **PASS (200, filtered)** |
 
 ---
 
-## 3. Defense-in-Depth Mechanisms
+## 3. End-to-End Browser Isolation Verification (Playwright Journey I)
+
+In addition to backend integration tests, full browser verification was conducted in Chromium Desktop and Mobile using two independent test companies:
+- **Company A (`Nusantara Retail Group`)**: User `admin@nusantara.local` (Budi Santoso). Branches: `Jakarta Flagship Store` (`BR-JKT`), `Surabaya Logistics Hub` (`BR-SUB`). Tasks: `TSK-001`, `TSK-002`, `TSK-003`.
+- **Company B (`Borneo Logistics Corp`)**: User `owner@borneo.local` (Hassan Borneo). Branch: `Balikpapan Port Facility` (`BR-BPN`). Task: `TSK-BORNEO-01` (`Confidential Borneo Freight Manifest`).
+
+### Verified Browser Checks:
+1. **Tenant B Login (`owner@borneo.local`)**:
+   - Company switcher displays ONLY `Borneo Logistics Corp` (Nusantara is absent).
+   - Branches view displays `Balikpapan Port Facility`; `Jakarta Flagship Store` is absent from DOM.
+   - Tasks view displays `Confidential Borneo Freight Manifest`; Nusantara tasks are absent from DOM.
+2. **In-Browser Network Fetch**:
+   - `page.evaluate(fetch('/api/v1/branches'))` returns strictly Borneo branches.
+3. **Session Switch to Tenant A (`admin@nusantara.local`)**:
+   - Post-login DOM inspection verifies that `Balikpapan Port Facility` and `Confidential Borneo Freight Manifest` are absent.
+
+---
+
+## 4. Defense-in-Depth Mechanisms
 
 1. **Authentication Tier**: Sanctum validates the session cookie against the MySQL session table.
 2. **Context Resolution Tier**: `EnsureTenantContext` verifies active tenant membership and populates request attributes.
