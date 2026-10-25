@@ -5,7 +5,7 @@ import { useAuth } from '../../context/AuthContext'
 export const LoginView: React.FC = () => {
   const { login, error, clearError } = useAuth()
   const [email, setEmail] = useState('admin@nusantara.local')
-  const [password, setPassword] = useState('password123')
+  const [password, setPassword] = useState('password')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -23,7 +23,7 @@ export const LoginView: React.FC = () => {
 
   const fillTestAccount = (testEmail: string) => {
     setEmail(testEmail)
-    setPassword('password123')
+    setPassword('password')
     clearError()
   }
 
@@ -177,24 +177,24 @@ export const LoginView: React.FC = () => {
               onClick={() => fillTestAccount('admin@nusantara.local')}
               style={{ padding: '6px 10px', fontSize: '11.5px', justifyContent: 'space-between', background: 'rgba(16, 44, 82, 0.4)' }}
             >
-              <span>Nusantara Admin</span>
+              <span>Nusantara Owner</span>
               <span style={{ color: 'var(--cyan)' }}>admin@nusantara.local</span>
             </button>
             <button
               type="button"
-              onClick={() => fillTestAccount('ops@nusantara.local')}
+              onClick={() => fillTestAccount('manager@nusantara.local')}
               style={{ padding: '6px 10px', fontSize: '11.5px', justifyContent: 'space-between', background: 'rgba(16, 44, 82, 0.4)' }}
             >
               <span>Nusantara Ops Manager</span>
-              <span style={{ color: 'var(--cyan)' }}>ops@nusantara.local</span>
+              <span style={{ color: 'var(--cyan)' }}>manager@nusantara.local</span>
             </button>
             <button
               type="button"
-              onClick={() => fillTestAccount('admin@borneo.local')}
+              onClick={() => fillTestAccount('owner@borneo.local')}
               style={{ padding: '6px 10px', fontSize: '11.5px', justifyContent: 'space-between', background: 'rgba(16, 44, 82, 0.4)' }}
             >
-              <span>Borneo Admin (Tenant 2)</span>
-              <span style={{ color: 'var(--cyan)' }}>admin@borneo.local</span>
+              <span>Borneo Owner (Tenant 2)</span>
+              <span style={{ color: 'var(--cyan)' }}>owner@borneo.local</span>
             </button>
           </div>
         </div>

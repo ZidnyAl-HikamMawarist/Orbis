@@ -1,9 +1,9 @@
 import type {
   Alert,
   Branch,
+  Company,
   DashboardMetrics,
   Department,
-  Membership,
   Project,
   Task,
   User,
@@ -35,11 +35,9 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
   }
 
   // Extract XSRF token from document.cookie if available
-  const xsrfCookie = document.cookie
-    .split('; ')
-    .find((row) => row.startsWith('XSRF-TOKEN='))
-  if (xsrfCookie) {
-    headers.set('X-XSRF-TOKEN', decodeURIComponent(xsrfCookie.split('=')[1]))
+  const match = document.cookie.match(/(?:^|;\s*)XSRF-TOKEN=([^;]+)/)
+  if (match) {
+    headers.set('X-XSRF-TOKEN', decodeURIComponent(match[1]))
   }
 
   const response = await fetch(`${API_BASE}${endpoint}`, {
@@ -71,18 +69,32 @@ export const api = {
     await fetch('/sanctum/csrf-cookie', { credentials: 'include' })
   },
 
-  async login(credentials: { email: string; password: string }): Promise<{ user: User; company: any; memberships: Membership[] }> {
+  async login(credentials: { email: string; password: string }): Promise<{
+    user: User
+    current_company: Company
+    current_membership: { id: string; role: string; status: string }
+    companies: Array<{ id: string; name: string; role: string; slug: string; is_current?: boolean }>
+  }> {
     return request('/auth/login', {
       method: 'POST',
       body: JSON.stringify(credentials),
     })
   },
 
-  async getMe(): Promise<{ user: User; active_company: any; memberships: Membership[] }> {
+  async getMe(): Promise<{
+    user: User
+    current_company: Company
+    current_membership: { id: string; role: string; status: string }
+    companies: Array<{ id: string; name: string; role: string; slug: string; is_current?: boolean }>
+  }> {
     return request('/auth/me')
   },
 
-  async switchCompany(company_id: string): Promise<{ message: string; active_company: any; active_role: string }> {
+  async switchCompany(company_id: string): Promise<{
+    message: string
+    current_company: Company
+    current_membership: { id: string; role: string; status: string }
+  }> {
     return request('/auth/switch-company', {
       method: 'POST',
       body: JSON.stringify({ company_id }),

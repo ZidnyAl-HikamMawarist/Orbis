@@ -31,15 +31,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setIsLoading(true)
       const data = await api.getMe()
       setUser(data.user)
-      setCompany(data.active_company)
-      setMemberships(data.memberships || [])
+      setCompany(data.current_company)
+      setRole(data.current_membership?.role || null)
 
-      if (data.active_company && data.memberships) {
-        const currentMem = data.memberships.find((m) => m.company_id === data.active_company.id)
-        setRole(currentMem?.role || null)
+      if (data.companies) {
+        setMemberships(
+          data.companies.map((c) => ({
+            id: c.id,
+            company_id: c.id,
+            user_id: data.user.id,
+            role: c.role as any,
+            status: 'active',
+            company: {
+              id: c.id,
+              name: c.name,
+              slug: c.slug,
+              status: 'active',
+            },
+          }))
+        )
       }
       setError(null)
-    } catch (err: any) {
+    } catch {
       setUser(null)
       setCompany(null)
       setRole(null)
@@ -60,12 +73,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       await api.initCsrf()
       const data = await api.login(credentials)
       setUser(data.user)
-      setCompany(data.company)
-      setMemberships(data.memberships || [])
+      setCompany(data.current_company)
+      setRole(data.current_membership?.role || null)
 
-      if (data.company && data.memberships) {
-        const currentMem = data.memberships.find((m) => m.company_id === data.company.id)
-        setRole(currentMem?.role || null)
+      if (data.companies) {
+        setMemberships(
+          data.companies.map((c) => ({
+            id: c.id,
+            company_id: c.id,
+            user_id: data.user.id,
+            role: c.role as any,
+            status: 'active',
+            company: {
+              id: c.id,
+              name: c.name,
+              slug: c.slug,
+              status: 'active',
+            },
+          }))
+        )
       }
     } catch (err: any) {
       if (err instanceof ApiError) {
@@ -95,8 +121,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setIsLoading(true)
       setError(null)
       const data = await api.switchCompany(companyId)
-      setCompany(data.active_company)
-      setRole(data.active_role)
+      setCompany(data.current_company)
+      setRole(data.current_membership?.role || null)
       await refreshSession()
     } catch (err: any) {
       setError(err instanceof ApiError ? err.message : 'Failed to switch company')
