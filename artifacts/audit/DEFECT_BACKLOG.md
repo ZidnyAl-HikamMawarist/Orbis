@@ -1,0 +1,12 @@
+# ORBIS — Defect Backlog & Remediation Register
+
+## 1. Defect Backlog Summary
+
+| Defect ID | Severity | Component / Area | Root Cause | Proposed / Applied Fix | Regression Test | Status |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **DEF-01** | **P1 (High)** | `apps/api/bootstrap/app.php` | Redundant session middleware prepend in API group caused double session initialization and clobbered cookies. | Replaced manual prepend with canonical `$middleware->statefulApi()` and added test referer in `TestCase.php`. | `AuthTest` suite (7 tests), Playwright E2E-01 & E2E-04 | **CLOSED (Verified)** |
+| **DEF-02** | **P1 (High)** | `apps/api/app/Http/Controllers/Api/ReportController.php` | Exported task fields starting with `=, +, -, @` were unescaped, allowing CSV Formula Injection (CWE-1236). | Added `sanitizeCsvCell()` mapping to escape leading formula operators with a single quote `'`. | `TenantIsolationTest::test_csv_export_sanitizes_potential_formula_injection` | **CLOSED (Verified)** |
+| **DEF-03** | **P2 (Med)** | `apps/web/src/components/Navbar.tsx` | Navbar header had fixed width without horizontal overflow, causing tabs to clip on narrow mobile screens (390px). | Added `overflowX: 'auto'` and `flexShrink: 0` to `.desktop-nav` buttons and brand elements. | Playwright E2E-05 on Chromium Mobile (390×844) | **CLOSED (Verified)** |
+| **DEF-04** | **P2 (Med)** | `tests/e2e/specs/orbis.spec.ts` | Logout expectation timeout was set to 10s, triggering flaky false timeouts when Windows I/O took 10.7s to flush database sessions. | Adjusted assertion timeout to 20s to absorb disk write variance without masking functional regressions. | Playwright E2E-01 & E2E-04 | **CLOSED (Verified)** |
+| **DEF-05** | **P2 (Med)** | `apps/api/tests/Feature/ProjectTaskTest.php` | Consecutive `actingAs()` calls within the same test method retained previous user session headers, causing 401 on admin reopen. | Split into two discrete PHPUnit test methods with isolated execution contexts. | `ProjectTaskTest::test_reopen_completed_task_restricted_by_policy_for_staff` & `test_admin_can_reopen_completed_task` | **CLOSED (Verified)** |
+| **DEF-06** | **P3 (Low)** | `apps/api/models/Project.php` | Historical formula in early drafts excluded backlog tasks from completion denominator, reporting 100% progress prematurely. | Denominator calculates all active task statuses (including `backlog`, `todo`, `in_progress`, `done`). | `ProjectTaskTest::test_task_creation_and_recalculation_includes_backlog_in_denominator` | **CLOSED (Verified)** |

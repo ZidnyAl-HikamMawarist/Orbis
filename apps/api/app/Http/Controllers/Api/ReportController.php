@@ -60,7 +60,7 @@ class ReportController extends Controller
 
             $query->chunk(100, function ($tasks) use ($handle) {
                 foreach ($tasks as $task) {
-                    fputcsv($handle, [
+                    $row = [
                         $task->id,
                         $task->code,
                         $task->title,
@@ -72,11 +72,29 @@ class ReportController extends Controller
                         $task->assignee?->user?->name ?? 'Unassigned',
                         $task->due_at?->toIso8601String() ?? 'No Due Date',
                         $task->created_at?->toIso8601String(),
-                    ]);
+                    ];
+
+                    fputcsv($handle, array_map([$this, 'sanitizeCsvCell'], $row));
                 }
             });
 
             fclose($handle);
         }, 200, $headers);
+    }
+
+    /**
+     * Prevent CSV Formula Injection (CWE-1236) by escaping formula characters.
+     */
+    private function sanitizeCsvCell(mixed $value): mixed
+    {
+        if (! is_string($value)) {
+            return $value;
+        }
+
+        if (preg_match('/^[=\+\-@\t\r]/', $value)) {
+            return "'" . $value;
+        }
+
+        return $value;
     }
 }

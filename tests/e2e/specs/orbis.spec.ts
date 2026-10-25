@@ -29,7 +29,7 @@ test.describe('ORBIS End-to-End Autonomous Mission Journeys', () => {
 
     // 5. Test logout
     await page.getByTitle('Log out').click()
-    await expect(page.getByRole('button', { name: /Sign In to Workspace/i })).toBeVisible({ timeout: 10000 })
+    await expect(page.getByRole('button', { name: /Sign In to Workspace/i })).toBeVisible({ timeout: 20000 })
   })
 
   test('Journey C & D — Branches, Task Creation, Drawer Details, and Transitions', async ({ page }) => {

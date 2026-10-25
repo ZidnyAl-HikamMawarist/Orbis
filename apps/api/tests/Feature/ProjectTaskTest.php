@@ -151,7 +151,7 @@ class ProjectTaskTest extends TestCase
         $this->assertEquals(50, $project->progress_percent);
     }
 
-    public function test_reopen_completed_task_restricted_by_policy(): void
+    public function test_reopen_completed_task_restricted_by_policy_for_staff(): void
     {
         $adminMembership = CompanyUser::where('company_id', $this->companyA->id)
             ->where('user_id', $this->adminUser->id)
@@ -166,8 +166,8 @@ class ProjectTaskTest extends TestCase
             'company_id' => $this->companyA->id,
             'creator_membership_id' => $adminMembership->id,
             'assignee_membership_id' => $staffMembership->id,
-            'code' => 'TSK-REOPEN',
-            'title' => 'Reopen Target',
+            'code' => 'TSK-REOPEN-STAFF',
+            'title' => 'Reopen Target Staff',
             'status' => 'done',
             'completed_at' => now(),
         ]);
@@ -181,6 +181,28 @@ class ProjectTaskTest extends TestCase
             ]);
 
         $staffAttempt->assertStatus(403);
+    }
+
+    public function test_admin_can_reopen_completed_task(): void
+    {
+        $adminMembership = CompanyUser::where('company_id', $this->companyA->id)
+            ->where('user_id', $this->adminUser->id)
+            ->first();
+
+        $staffMembership = CompanyUser::where('company_id', $this->companyA->id)
+            ->where('user_id', $this->staffUser->id)
+            ->first();
+
+        $task = Task::create([
+            'id' => (string) Str::ulid(),
+            'company_id' => $this->companyA->id,
+            'creator_membership_id' => $adminMembership->id,
+            'assignee_membership_id' => $staffMembership->id,
+            'code' => 'TSK-REOPEN-ADMIN',
+            'title' => 'Reopen Target Admin',
+            'status' => 'done',
+            'completed_at' => now(),
+        ]);
 
         // Admin reopens task: allowed with 200
         $adminAttempt = $this->actingAs($this->adminUser)

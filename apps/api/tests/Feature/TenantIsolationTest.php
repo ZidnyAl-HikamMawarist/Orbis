@@ -237,4 +237,142 @@ class TenantIsolationTest extends TestCase
         $response->assertStatus(422)
             ->assertJsonValidationErrors(['branch_id']);
     }
+
+    /**
+     * SEC-ISO-07: Direct ID access to another company's task returns 404 (IDOR prevention).
+     */
+    public function test_user_cannot_read_task_of_another_company_by_direct_id(): void
+    {
+        $this->actingAs($this->userA);
+        session(['current_company_id' => $this->companyA->id]);
+
+        $response = $this->getJson("/api/v1/tasks/{$this->taskB->id}");
+
+        $response->assertStatus(404);
+    }
+
+    /**
+     * SEC-ISO-08: Direct update of another company's task returns 404 (BOLA prevention).
+     */
+    public function test_user_cannot_update_task_of_another_company_by_direct_id(): void
+    {
+        $this->actingAs($this->userA);
+        session(['current_company_id' => $this->companyA->id]);
+
+        $response = $this->putJson("/api/v1/tasks/{$this->taskB->id}", [
+            'title' => 'Maliciously Tampered Title',
+        ]);
+
+        $response->assertStatus(404);
+
+        $this->assertEquals('Confidential Beta Strategy', $this->taskB->fresh()->title);
+    }
+
+    /**
+     * SEC-ISO-09: Direct access to another company's project returns 404.
+     */
+    public function test_user_cannot_read_project_of_another_company_by_direct_id(): void
+    {
+        $this->actingAs($this->userA);
+        session(['current_company_id' => $this->companyA->id]);
+
+        $response = $this->getJson("/api/v1/projects/{$this->projectB->id}");
+
+        $response->assertStatus(404);
+    }
+
+    /**
+     * SEC-ISO-10: Creating task with foreign project_id is rejected with 422.
+     */
+    public function test_user_cannot_assign_task_to_foreign_project_id(): void
+    {
+        $this->actingAs($this->userA);
+        session(['current_company_id' => $this->companyA->id]);
+
+        $response = $this->postJson('/api/v1/tasks', [
+            'code' => 'TSK-A-FOREIGN-PRJ',
+            'title' => 'Cross Tenant Task Attempt',
+            'project_id' => $this->projectB->id,
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['project_id']);
+    }
+
+    /**
+     * SEC-ISO-11: Creating task with foreign department_id is rejected with 422.
+     */
+    public function test_user_cannot_assign_task_to_foreign_department_id(): void
+    {
+        $this->actingAs($this->userA);
+        session(['current_company_id' => $this->companyA->id]);
+
+        $response = $this->postJson('/api/v1/tasks', [
+            'code' => 'TSK-A-FOREIGN-DEPT',
+            'title' => 'Cross Tenant Dept Attempt',
+            'department_id' => $this->deptB->id,
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['department_id']);
+    }
+
+    /**
+     * SEC-ISO-12: Updating membership role of another company returns 404.
+     */
+    public function test_user_cannot_update_role_of_another_company_member(): void
+    {
+        $membershipB = CompanyUser::where('company_id', $this->companyB->id)->first();
+
+        $this->actingAs($this->userA);
+        session(['current_company_id' => $this->companyA->id]);
+
+        $response = $this->putJson("/api/v1/members/{$membershipB->id}/role", [
+            'role' => 'staff',
+        ]);
+
+        $response->assertStatus(404);
+    }
+
+    /**
+     * SEC-ISO-13: Task listing filtered by foreign branch returns empty collection, no leak.
+     */
+    public function test_task_listing_filtered_by_foreign_branch_returns_empty(): void
+    {
+        $this->actingAs($this->userA);
+        session(['current_company_id' => $this->companyA->id]);
+
+        $response = $this->getJson("/api/v1/tasks?branch_id={$this->branchB->id}");
+
+        $response->assertStatus(200)
+            ->assertJsonPath('total', 0);
+    }
+
+    /**
+     * SEC-ISO-14: CSV export with formula character is safely escaped (CWE-1236 defense).
+     */
+    public function test_csv_export_sanitizes_potential_formula_injection(): void
+    {
+        $adminMembershipA = CompanyUser::where('company_id', $this->companyA->id)->first();
+
+        Task::create([
+            'id' => (string) Str::ulid(),
+            'company_id' => $this->companyA->id,
+            'creator_membership_id' => $adminMembershipA->id,
+            'code' => 'TSK-FORMULA',
+            'title' => '=SUM(1+1)',
+            'status' => 'todo',
+        ]);
+
+        $this->actingAs($this->userA);
+        session(['current_company_id' => $this->companyA->id]);
+
+        $response = $this->get('/api/v1/reports/tasks-csv');
+
+        $response->assertStatus(200);
+        $content = $response->streamedContent();
+
+        // The formula prefix '=' must be prepended with a single quote "'"
+        $this->assertStringContainsString("'=SUM(1+1)", $content);
+    }
 }

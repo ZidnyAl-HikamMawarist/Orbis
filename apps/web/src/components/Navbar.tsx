@@ -35,17 +35,20 @@ export const Navbar: React.FC<NavbarProps> = ({
       display: 'flex',
       alignItems: 'center',
       gap: '16px',
-      padding: '0 20px',
+      padding: '0 16px',
       background: 'linear-gradient(180deg, #081c38 0%, #06152b 100%)',
       borderBottom: '1px solid var(--line)',
       position: 'relative',
       zIndex: 50,
+      overflowX: 'auto',
+      maxWidth: '100vw',
+      scrollbarWidth: 'none',
     }}>
       {/* Brand */}
       <div
         className="brand"
         onClick={() => onSelectTab('campus')}
-        style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }}
+        style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', flexShrink: 0 }}
       >
         <div
           style={{
@@ -71,13 +74,15 @@ export const Navbar: React.FC<NavbarProps> = ({
       </div>
 
       {/* Desktop Navigation */}
-      <nav style={{ display: 'flex', alignItems: 'center', gap: '6px', marginLeft: '12px' }} className="desktop-nav">
+      <nav style={{ display: 'flex', alignItems: 'center', gap: '6px', marginLeft: '12px', flexShrink: 0 }} className="desktop-nav">
         <button
           onClick={() => onSelectTab('campus')}
           style={{
             background: currentTab === 'campus' ? 'rgba(34, 98, 170, 0.4)' : 'transparent',
             borderColor: currentTab === 'campus' ? 'var(--cyan)' : 'transparent',
             color: currentTab === 'campus' ? '#fff' : 'var(--muted)',
+            flexShrink: 0,
+            whiteSpace: 'nowrap',
           }}
         >
           <Globe2 size={16} /> 3D Campus
@@ -89,6 +94,8 @@ export const Navbar: React.FC<NavbarProps> = ({
             background: currentTab === 'dashboard' ? 'rgba(34, 98, 170, 0.4)' : 'transparent',
             borderColor: currentTab === 'dashboard' ? 'var(--cyan)' : 'transparent',
             color: currentTab === 'dashboard' ? '#fff' : 'var(--muted)',
+            flexShrink: 0,
+            whiteSpace: 'nowrap',
           }}
         >
           <LayoutDashboard size={16} /> Quick Dashboard
@@ -100,6 +107,8 @@ export const Navbar: React.FC<NavbarProps> = ({
             background: currentTab === 'branches' ? 'rgba(34, 98, 170, 0.4)' : 'transparent',
             borderColor: currentTab === 'branches' ? 'var(--cyan)' : 'transparent',
             color: currentTab === 'branches' ? '#fff' : 'var(--muted)',
+            flexShrink: 0,
+            whiteSpace: 'nowrap',
           }}
         >
           <MapPin size={16} /> Branches
@@ -111,6 +120,8 @@ export const Navbar: React.FC<NavbarProps> = ({
             background: currentTab === 'tasks' ? 'rgba(34, 98, 170, 0.4)' : 'transparent',
             borderColor: currentTab === 'tasks' ? 'var(--cyan)' : 'transparent',
             color: currentTab === 'tasks' ? '#fff' : 'var(--muted)',
+            flexShrink: 0,
+            whiteSpace: 'nowrap',
           }}
         >
           <CheckSquare size={16} /> Tasks
@@ -123,6 +134,8 @@ export const Navbar: React.FC<NavbarProps> = ({
             borderColor: currentTab === 'alerts' ? 'var(--cyan)' : 'transparent',
             color: currentTab === 'alerts' ? '#fff' : 'var(--muted)',
             position: 'relative',
+            flexShrink: 0,
+            whiteSpace: 'nowrap',
           }}
         >
           <Bell size={16} /> Alerts
@@ -146,7 +159,7 @@ export const Navbar: React.FC<NavbarProps> = ({
       </nav>
 
       {/* Right Controls: Company Switcher & Profile */}
-      <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '12px' }}>
+      <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '12px', flexShrink: 0 }}>
         {/* Company Switcher Dropdown */}
         <div style={{ position: 'relative' }}>
           <button
