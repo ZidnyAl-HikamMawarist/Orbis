@@ -1,11 +1,14 @@
 <?php
 
+use App\Http\Controllers\Api\AlertController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BranchController;
+use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\DepartmentController;
 use App\Http\Controllers\Api\InvitationController;
 use App\Http\Controllers\Api\MembershipController;
 use App\Http\Controllers\Api\ProjectController;
+use App\Http\Controllers\Api\ReportController;
 use App\Http\Controllers\Api\TaskController;
 use App\Http\Middleware\EnsureTenantContext;
 use Illuminate\Support\Facades\Route;
@@ -35,6 +38,9 @@ Route::prefix('v1')->group(function () {
 
         // Tenant-Scoped Management
         Route::middleware(EnsureTenantContext::class)->group(function () {
+            // Dashboard Metrics
+            Route::get('/dashboard/metrics', [DashboardController::class, 'metrics']);
+
             // Invitations
             Route::get('/invitations', [InvitationController::class, 'index']);
             Route::post('/invitations', [InvitationController::class, 'store']);
@@ -74,6 +80,14 @@ Route::prefix('v1')->group(function () {
             Route::post('/tasks/{id}/transition', [TaskController::class, 'transition']);
             Route::post('/tasks/{id}/comments', [TaskController::class, 'addComment']);
             Route::post('/tasks/{id}/archive', [TaskController::class, 'archive']);
+
+            // Alerts
+            Route::get('/alerts', [AlertController::class, 'index']);
+            Route::post('/alerts/{id}/acknowledge', [AlertController::class, 'acknowledge']);
+            Route::post('/alerts/{id}/resolve', [AlertController::class, 'resolve']);
+
+            // Reports / Export
+            Route::get('/reports/tasks-csv', [ReportController::class, 'tasksCsv']);
         });
     });
 });
