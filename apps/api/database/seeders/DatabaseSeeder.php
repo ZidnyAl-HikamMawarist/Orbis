@@ -151,5 +151,38 @@ class DatabaseSeeder extends Seeder
             'joined_at' => now(),
             'created_at' => now(),
         ]);
+
+        // 4. Seed Borneo isolated branch and task for multi-tenant validation
+        $borneoBranch = \App\Models\Branch::create([
+            'id' => (string) Str::ulid(),
+            'company_id' => $borneo->id,
+            'code' => 'BR-BPN',
+            'name' => 'Balikpapan Port Facility',
+            'status' => 'active',
+            'created_at' => now(),
+        ]);
+
+        $borneoDept = \App\Models\Department::create([
+            'id' => (string) Str::ulid(),
+            'company_id' => $borneo->id,
+            'branch_id' => $borneoBranch->id,
+            'code' => 'DEPT-LOG',
+            'name' => 'Maritime Logistics',
+            'status' => 'active',
+            'created_at' => now(),
+        ]);
+
+        \App\Models\Task::create([
+            'id' => (string) Str::ulid(),
+            'company_id' => $borneo->id,
+            'branch_id' => $borneoBranch->id,
+            'department_id' => $borneoDept->id,
+            'creator_membership_id' => $ownerBorneo->memberships()->where('company_id', $borneo->id)->first()->id,
+            'code' => 'TSK-BORNEO-01',
+            'title' => 'Confidential Borneo Freight Manifest',
+            'status' => 'in_progress',
+            'priority' => 'high',
+            'created_at' => now(),
+        ]);
     }
 }

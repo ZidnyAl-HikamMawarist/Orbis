@@ -214,8 +214,7 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
                 value={dueDate}
                 onChange={(e) => setDueDate(e.target.value)}
                 style={{ width: '100%', background: '#0a2240', border: '1px solid var(--line)', borderRadius: '8px', padding: '7px 8px', color: '#fff' }}
-              >
-              </input>
+              />
             </div>
           </div>
 

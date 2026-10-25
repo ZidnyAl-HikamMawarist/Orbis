@@ -98,4 +98,58 @@ test.describe('ORBIS End-to-End Autonomous Mission Journeys', () => {
       await expect(page.getByText('Topological Campus Network')).toBeVisible()
     }
   })
+
+  test('Journey I — Real Multi-Tenant Cross-Company Isolation and Boundary Verification', async ({ page }) => {
+    // 1. Login as Tenant B Owner (Borneo Logistics Corp)
+    await page.goto('/')
+    await page.locator('input[type="email"]').fill('owner@borneo.local')
+    await page.locator('input[type="password"]').fill('password')
+    await page.getByRole('button', { name: /Sign In to Workspace/i }).click()
+
+    // 2. Verify Tenant B Context is active
+    await expect(page.getByText('Borneo Logistics Corp', { exact: false })).toBeVisible({ timeout: 15000 })
+    await expect(page.getByText('Hassan Borneo', { exact: false })).toBeVisible()
+
+    // 3. Verify Company Switcher only displays memberships belonging to Hassan Borneo
+    await page.getByRole('button', { name: /Borneo Logistics Corp/i }).click()
+    await expect(page.getByText('SWITCH COMPANY TENANT')).toBeVisible()
+    // Nusantara Retail Group must NOT be present in Hassan's membership options
+    await expect(page.locator('text=Nusantara Retail Group')).toHaveCount(0)
+    await page.keyboard.press('Escape')
+
+    // 4. Inspect Branches in Tenant B
+    await page.getByRole('button', { name: /Branches/i }).click()
+    await expect(page.getByText('Balikpapan Port Facility')).toBeVisible({ timeout: 10000 })
+    // Nusantara branch (Jakarta / Bali) must NOT be visible
+    await expect(page.getByText('Jakarta Flagship Store')).toHaveCount(0)
+
+    // 5. Inspect Tasks in Tenant B
+    await page.getByRole('button', { name: /Tasks/i }).click()
+    await expect(page.getByText('Confidential Borneo Freight Manifest')).toBeVisible({ timeout: 10000 })
+    // Nusantara tasks must NOT be visible
+    await expect(page.getByText('Quarterly inventory cycle count')).toHaveCount(0)
+
+    // 6. Direct browser API cross-tenant attempt: fetch branches under Tenant B session
+    const branchesPayload = await page.evaluate(async () => {
+      const res = await fetch('/api/v1/branches', { credentials: 'include' })
+      return await res.json()
+    })
+    const branchNames = (branchesPayload.data || []).map((b: any) => b.name)
+    expect(branchNames).toContain('Balikpapan Port Facility')
+    expect(branchNames).not.toContain('Jakarta Flagship Store')
+
+    // 7. Logout from Tenant B
+    await page.getByTitle('Log out').click()
+    await expect(page.getByRole('button', { name: /Sign In to Workspace/i })).toBeVisible({ timeout: 20000 })
+
+    // 8. Login as Tenant A Owner (Nusantara Retail Group)
+    await loginAsAdmin(page)
+
+    // 9. Verify Tenant A cannot see Tenant B's confidential branch or task
+    await page.getByRole('button', { name: /Branches/i }).click()
+    await expect(page.getByText('Balikpapan Port Facility')).toHaveCount(0)
+
+    await page.getByRole('button', { name: /Tasks/i }).click()
+    await expect(page.getByText('Confidential Borneo Freight Manifest')).toHaveCount(0)
+  })
 })

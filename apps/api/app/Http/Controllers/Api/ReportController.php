@@ -83,15 +83,26 @@ class ReportController extends Controller
     }
 
     /**
-     * Prevent CSV Formula Injection (CWE-1236) by escaping formula characters.
+     * Prevent CSV Formula Injection (CWE-1236) across spreadsheet applications (Excel, LibreOffice, Google Sheets).
+     *
+     * Evaluates trimmed content so leading whitespace, tabs, carriage returns, or control characters
+     * cannot bypass the formula prefix check. Prepends a single quote (') to trigger spreadsheet text mode.
      */
-    private function sanitizeCsvCell(mixed $value): mixed
+    public function sanitizeCsvCell(mixed $value): mixed
     {
-        if (! is_string($value)) {
+        if (! is_string($value) || $value === '') {
             return $value;
         }
 
-        if (preg_match('/^[=\+\-@\t\r]/', $value)) {
+        // If raw string starts with whitespace or control characters followed by formula triggers
+        if (preg_match('/^[\t\r\n]/', $value)) {
+            return "'" . $value;
+        }
+
+        // Trim leading whitespace and control characters to detect obfuscated formulas
+        $trimmed = ltrim($value, " \t\n\r\0\x0B");
+
+        if ($trimmed !== '' && preg_match('/^[=\+\-@%|]/', $trimmed)) {
             return "'" . $value;
         }
 

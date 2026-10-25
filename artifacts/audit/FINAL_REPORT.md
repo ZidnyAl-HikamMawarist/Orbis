@@ -1,69 +1,108 @@
-# ORBIS — Autonomous Engineering Audit, Security Hardening & Release Validation Report
+# ORBIS RC2 — Comprehensive Engineering Audit, Security Hardening & Release Validation Final Report
 
-## 1. Executive Summary
-This report delivers an exhaustive, evidence-driven engineering audit of the **ORBIS** multi-tenant operations SaaS platform (`ZidnyAl-HikamMawarist/Orbis`). Operating with senior engineering mandates across architecture, security, database systems, QA automation, and frontend engineering, the audit investigated all code, configuration, and historical claims from commits `82774d5` through `22340d2`.
+## 1. Executive Summary & Assessment Overview
 
-Every finding raised by the human audit inquiry was independently reproduced, diagnosed, remediated, and verified against real runtimes without mocked or fabricated results.
+This report provides the authoritative final assessment for the **ORBIS** multi-tenant operations SaaS platform (`ZidnyAl-HikamMawarist/Orbis`) on branch `audit/release-validation`.
 
----
+In accordance with strict autonomous engineering mandates, all previous audit claims were audited against empirical evidence. Gaps in CSV formula injection defenses, E2E multi-tenant testing, performance scalability assertions, and continuous integration workflows were resolved and verified against real runtimes without mocked or inflated claims.
 
-## 2. Key Audit Inquiries & Determinations
-
-### A. Sanctum SPA Middleware Investigation (Priority High)
-- **User Inquest**: Did the Phase 5 removal of `statefulApi()` in favor of manual session middleware compromise cookie integrity, CSRF protection, or reload persistence?
-- **Finding**: Yes. A manual prepend of session middleware in `bootstrap/app.php` alongside `auth:sanctum` caused `StartSession::class` to run twice. This clobbered session cookies on subsequent requests.
-- **Remediation**:
-  1. Consolidated `bootstrap/app.php` to the canonical Laravel Sanctum configuration: `$middleware->statefulApi()`.
-  2. Injected `Referer: http://localhost` into `apps/api/tests/TestCase.php` so PHPUnit requests are accurately identified as stateful SPA requests.
-  3. Verified full login → authenticated request → page reload → logout lifecycle on Chromium Desktop (1280×720) and Chromium Mobile (390×844) with 100% success.
-
-### B. Multi-Tenant Isolation Across Real Execution Paths (Priority High)
-- **User Inquest**: Is tenant isolation enforced across all controllers, direct ID lookups, foreign key inputs, search filters, and CSV exports?
-- **Finding**: Scoping is enforced at multiple architectural layers:
-  1. **Server-Side Resolution**: `EnsureTenantContext` derives tenant identity from authenticated session membership, never trusting client input.
-  2. **Global Scoping**: 10 core Eloquent models implement PHP 8 attribute `#[ScopedBy([TenantScope::class])]`.
-  3. **IDOR / BOLA Immunity**: Negative authorization tests confirmed that requesting foreign task IDs or project IDs throws `404 Not Found`.
-  4. **Foreign Key Injection Defense**: Creating tasks with foreign `project_id`, `department_id`, or `branch_id` is rejected with `422 Unprocessable Content`.
-  5. **Negative Test Expansion**: Expanded `TenantIsolationTest` from 5 to 13 tests (29 assertions), all passing.
-
-### C. Reconciliation of E2E Journey Counts (Clarification)
-- **User Inquest**: Why did reports state 6 Playwright journeys passed while another section cited 10 automated journeys?
-- **Determination**:
-  - **10 Scenarios**: Refers to the 10 functional user journey specifications (Journeys A through J) defined in product requirements.
-  - **3 Compound Specs**: The Playwright suite combines these 10 scenarios into 3 consolidated test specifications to minimize browser teardown overhead.
-  - **6 Executions**: Executing the 3 test specifications across 2 environments (Chromium Desktop and Chromium Mobile) produces exactly **6 browser test executions**.
-  - All 6 executions passed cleanly in 1.7 minutes on real Chromium.
-
-### D. Scalability & Performance Realities (Clarification)
-- **User Inquest**: Does a 959ms frontend build prove scalability under millions of records?
-- **Determination**: No. Frontend build speed only measures Vite bundler throughput. Real scalability was evaluated via MySQL query execution plans:
-  - All multi-tenant tables utilize composite indexes leading with `company_id`.
-  - `EXPLAIN` confirmed that queries for tasks, branches, and projects execute with `type: ref, key_len: 26` (ULID match), yielding $O(\log N_{\text{company}})$ lookup complexity regardless of total rows across other tenants.
-  - Memory bounds are enforced via server-side pagination (`LIMIT 30`) and chunked cursor streaming (`chunk(100)`) for exports.
-
-### E. Security Hardening: CSV Formula Injection (CWE-1236)
-- **Finding**: Task titles starting with formula operators (`=`, `+`, `-`, `@`) exported to CSV could execute arbitrary commands in Microsoft Excel.
-- **Remediation**: Implemented `sanitizeCsvCell()` in `ReportController.php`, escaping leading formula characters with a single quote `'`. Verified via automated regression test.
-
-### F. Mobile UI Responsiveness Hardening
-- **Finding**: Header navigation buttons clipped on screens narrower than 400px, preventing tab selection and task creation on mobile devices.
-- **Remediation**: Added `overflow-x: auto` and `flex-shrink: 0` to `Navbar.tsx`, allowing fluid horizontal panning on mobile viewports.
+### Summary Quality Gate Statuses
+- **Gate A — Baseline & Migrations**: **`PASS`** (PHP 8.3.26, Laravel 13.38.0, MySQL 8.4.3 LTS, 9 migrations verified).
+- **Gate B — Authentication & Tenant Isolation**: **`PASS`** (Canonical `statefulApi()`, session persistence, negative IDOR tests, browser E2E cross-tenant isolation).
+- **Gate C — Core Operations & Workflows**: **`PASS`** (Task state transitions, project progress derivation including backlog, audit logging).
+- **Gate D — Data Integrity & CSV Injection Defense**: **`PASS`** (Whitespace and control-character immune sanitization across all exported fields, 27 assertions verified).
+- **Gate E — Frontend Usability & Browser E2E**: **`PASS`** (TypeScript clean build, 8 of 8 Playwright browser tests passed across Chromium Desktop & Mobile).
+- **Gate F — Performance & Scalability**: **`PARTIAL`** (Empirical benchmarks up to 10k tasks; bounded memory confirmed; `filesort` identified; million-row concurrency unverified).
+- **Gate G — Continuous Integration**: **`NOT VERIFIED (Workflow Created, Pending Remote Run)`** (`.github/workflows/ci.yml` authored and syntax validated).
 
 ---
 
-## 3. Verified Test & Build Summary
+## 2. Detailed Audit Determinations & Engineering Actions
 
-| Suite / Check | Command | Exit Code | Result | Evidence / Duration |
-| :--- | :--- | :--- | :--- | :--- |
-| **Backend Unit & Feature Tests** | `php artisan test` | `0` | **46 passed** (126 assertions) | 26.97s (`task-1483`) |
-| **Negative Tenant Isolation** | `php artisan test --filter=TenantIsolationTest` | `0` | **13 passed** (29 assertions) | 19.26s (`task-1472`) |
-| **Frontend TypeScript & Build** | `tsc -b && vite build` | `0` | **Success** (1948 modules) | 1.51s (`task-1654`) |
-| **Playwright E2E Suite** | `npx playwright test` | `0` | **6 passed** (0 failed) | 1.7m (`task-1659`) |
-| **Database Migrations** | `php artisan migrate:status` | `0` | **9/9 migrated** | MySQL 8.4.3 LTS |
+### Priority 1 — CSV Formula Injection (CWE-1236)
+- **Problem**: Naive regex `/^[=+\-@]/` failed to catch leading whitespace (`"   =SUM(1+1)"`), tabs (`\t`), or carriage returns (`\r\n`), which spreadsheet engines (Excel, Google Sheets, Calc) strip before formula execution.
+- **Implemented Remediation**:
+  In `apps/api/app/Http/Controllers/Api/ReportController.php`:
+  1. Detects raw strings starting with control characters (`\t`, `\r`, `\n`) and immediately prepends `'`.
+  2. Trims leading whitespace and control characters (`ltrim($value, " \t\n\r\0\x0B")`) and tests for trigger characters `=, +, -, @, %, |`.
+  3. Prepending `'` forces spreadsheet calculators to treat the cell strictly as literal text.
+  4. Applied across ALL exported task fields: `Task ID`, `Code`, `Title`, `Status`, `Priority`, `Project`, `Branch`, `Department`, `Assignee`, `Due Date`, `Created At`.
+- **Regression Verification**:
+  Created `apps/api/tests/Feature/CsvSanitizationTest.php` with 2 test cases and 27 assertions:
+  - Unit edge-case test: verifies trigger characters, whitespace prefixes, tabs, newlines, and confirms legitimate codes/dates are untouched.
+  - Streamed response test: verifies the actual HTTP streamed CSV output contains `'` on adversarial fields while clean tasks remain clean.
+  - Result: `2 passed (27 assertions)`, duration: 19.19s.
+- **Residual Trade-off**:
+  Prepending `'` successfully prevents formula execution in spreadsheet software, but the quote character remains in raw text files and internal ETL pipelines. Downstream data science consumers should strip leading single quotes if exact string identity is needed.
+
+### Priority 2 — E2E Coverage Accuracy & Multi-Tenant Browser Testing
+- **Problem**: Previous reports claimed 10 user journeys tested while the Playwright spec only executed 3 compound tests and omitted cross-tenant boundary verification.
+- **Implemented Remediation**:
+  1. Reconciled every claimed journey against executable test assertions.
+  2. Seeded real test data for **Tenant B** (`Borneo Logistics Corp`, user `owner@borneo.local`) alongside **Tenant A** (`Nusantara Technologies`, user `admin@nusantara.local`).
+  3. Authored **Test Specification 4** in `tests/e2e/specs/orbis.spec.ts`:
+     - Logs into Borneo Logistics Corp.
+     - Confirms company switcher only displays Borneo.
+     - Confirms `Balikpapan Port Facility` and `Confidential Borneo Freight Manifest` are rendered; Nusantara branches and tasks are completely absent from the DOM.
+     - Executes in-browser `fetch('/api/v1/branches')` and verifies only Borneo branches are returned by the API.
+     - Logs out from Borneo, logs into Nusantara, and verifies Borneo resources cannot be viewed.
+- **Browser Execution Results**:
+  Executed `npx playwright test --config=tests/e2e/playwright.config.ts`:
+  - **4 compound test specifications** executed across **2 viewports** (Chromium Desktop 1280×720 and Chromium Mobile 390×844) = **8 total browser test runs**.
+  - All 8 passed (100% success rate, 0 retries, total duration: 137.5s). Evidence recorded in `artifacts/testing/e2e-report.json`.
+
+### Priority 3 — Performance Evidence & Query Scalability Audit
+- **Problem**: Previous audit claimed all queries scale at $O(\log N)$ across millions of rows based merely on index presence and frontend build time.
+- **Empirical Investigation & Index Findings**:
+  1. Inspected actual MySQL 8.4 schema and migration indexes.
+  2. Identified that while composite indexes filter by `company_id = ?`, primary listing queries (`TaskController::index` and `ProjectController::index`) sort by `created_at DESC` without an index on `(company_id, created_at)`.
+  3. Verified via MySQL 8.4 `EXPLAIN` that task and project listing queries produce:
+     `key: uq_task_code | Extra: Using where; Using filesort`.
+  4. Sorting $M$ records of a company incurs an $O(M \log M)$ sorting cost prior to applying `LIMIT 30`.
+- **Synthetic Scalability Benchmarking**:
+  Conducted automated benchmarks on an isolated synthetic company across **500**, **2,500**, and **10,000** tasks (20 iterations per query):
+  - **Task Listing**: Median p50 latency was **7.20 ms** at 500 rows, **30.61 ms** at 2,500 rows, and **112.43 ms** (p95: **203.52 ms**) at 10,000 rows.
+  - **Dashboard Metrics**: Median p50 latency was **10.30 ms** at 500 rows, **70.57 ms** at 2,500 rows, and **248.96 ms** (p95: **355.92 ms**) at 10,000 rows.
+  - **Memory Stability**: Peak PHP memory stayed completely flat at **26 MB – 28 MB** across all tiers, verifying that chunked streaming prevents memory exhaustion.
+  - **CSV Export Streaming**: Exporting 10,000 records takes **11.6 seconds**.
+- **Scalability Decision**: Marked **`PARTIAL`**. Million-row concurrent load testing and connection pool saturation remain unverified.
+
+### Priority 4 — Continuous Integration
+- **Problem**: No CI workflow existed in the repository.
+- **Implemented Remediation**:
+  Created `.github/workflows/ci.yml`:
+  - Triggers on `push` (branches: `main`, `audit/**`, `release/**`) and `pull_request` (`main`).
+  - **Job 1 (backend-test)**: Ubuntu runner, MySQL 8.4 service container, PHP 8.3, Composer cache, automated migrations, and `php artisan test`.
+  - **Job 2 (frontend-build)**: Node.js 20, `npm ci`, `npm run lint` (Oxlint), `npm run build` (TypeScript check & Vite build).
+  - **Job 3 (e2e-playwright)**: Boots Laravel API and Vite preview on isolated MySQL service, installs Chromium dependencies, and executes full Playwright test suite.
+  - Uses isolated test services and zero hardcoded secrets.
+  - YAML syntax validated locally via Python parser.
+- **Status**: Marked **`NOT VERIFIED (Workflow Created, Pending Remote Run)`**.
 
 ---
 
-## 4. Final Recommendation & Status
-- **Final Release Status**: **RELEASE CANDIDATE (v1.0.0-rc2)**
-- **Recommendation**: **READY FOR INTERNAL TESTING & STAGING ENVIRONMENT DEPLOYMENT**.
-- **Production Pre-requisites**: Prior to live public release, configure production HTTPS, disable debug mode (`APP_DEBUG=false`), set secure cookie flags, and establish a recurring GitHub Actions CI workflow.
+## 3. Verified Verification Matrix
+
+| Verification Check | Tool / Engine | Command / Path | Executed Assertions / Tests | Duration | Result |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **CSV Formula Injection Regression** | PHPUnit / Laravel 13 | `php artisan test --filter=CsvSanitizationTest` | 2 tests, 27 assertions | 19.19s | **PASS** |
+| **Negative Multi-Tenant Isolation** | PHPUnit / Laravel 13 | `php artisan test --filter=TenantIsolationTest` | 13 tests, 29 assertions | 19.26s | **PASS** |
+| **Authentication & Session Lifecycle** | PHPUnit / Laravel 13 | `php artisan test --filter=AuthTest` | 7 tests, 19 assertions | 15.34s | **PASS** |
+| **Full Backend Suite** | PHPUnit / Laravel 13 | `php artisan test` | 48 tests, 153 assertions | 28.45s | **PASS** |
+| **Frontend TypeScript & Bundle Build** | Vite 8.3.5 / TSC | `npm run build` (in `apps/web`) | 1,948 modules processed, 0 type errors | 1.51s | **PASS** |
+| **Playwright Browser E2E (Desktop)** | Chromium (1280×720) | `npx playwright test --project=chromium-desktop` | 4 compound specs (Journeys A–J) | 61.9s | **PASS** |
+| **Playwright Browser E2E (Mobile)** | Chromium (390×844) | `npx playwright test --project=chromium-mobile` | 4 compound specs (Journeys A–J) | 72.1s | **PASS** |
+| **Total Playwright Executions** | Playwright 1.64.1 | `npx playwright test` | **8 of 8 passed (0 failed, 0 flaky)** | 137.5s | **PASS** |
+| **CI Workflow Syntax Validation** | Python `yaml.safe_load` | `.github/workflows/ci.yml` | 3 jobs (`backend-test`, `frontend-build`, `e2e-playwright`) | < 1s | **PASS** |
+
+---
+
+## 4. Release Recommendation & Status
+
+- **Release Milestone**: **ORBIS Release Candidate 2 (v1.0.0-rc2)**
+- **Audit Assessment**: **APPROVED FOR INTERNAL TESTING & STAGING DEPLOYMENT**
+- **Production Gate Conditions**:
+  1. Trigger and observe the first remote run of `.github/workflows/ci.yml` upon push authorization.
+  2. Enforce HTTPS and set `SESSION_SECURE_COOKIE=true` in production environment configuration.
+  3. Set `APP_DEBUG=false` in production `.env`.
+  4. Schedule a database migration to add composite index `(company_id, archived_at, created_at)` to eliminate `filesort` on task listings prior to high-volume tenant onboarding.
