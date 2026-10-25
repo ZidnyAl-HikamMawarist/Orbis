@@ -1,0 +1,150 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap');
+
+:root {
+  --bg: #061325;
+  --navy: #081a33;
+  --panel: rgba(9, 27, 52, 0.92);
+  --panel-solid: #0a203d;
+  --panel2: #102c52;
+  --line: rgba(66, 121, 179, 0.38);
+  --line-bright: rgba(88, 199, 255, 0.65);
+  --text: #f3f7ff;
+  --muted: #97b4d6;
+  --cyan: #35d8ff;
+  --blue: #2575fc;
+  --gold: #f5b342;
+  --gold-dark: #c9861b;
+  --purple: #7c69ef;
+  --red: #ff5b79;
+  --green: #2ce0a3;
+  --glass-bg: rgba(10, 32, 61, 0.75);
+  --glass-border: rgba(53, 216, 255, 0.25);
+  --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.45);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html, body, #root {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+button, input, select, textarea {
+  font-family: inherit;
+  font-size: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--panel2);
+  padding: 8px 14px;
+  transition: all 0.16s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  font-weight: 500;
+}
+
+button:hover:not(:disabled) {
+  filter: brightness(1.15);
+  border-color: var(--line-bright);
+}
+
+button:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(5, 16, 32, 0.5);
+}
+::-webkit-scrollbar-thumb {
+  background: #264d78;
+  border-radius: 99px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #35d8ff;
+}
+
+/* Glassmorphism helpers */
+.glass-panel {
+  background: var(--glass-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--line);
+  box-shadow: var(--glass-shadow);
+  border-radius: 14px;
+}
+
+.glass-card {
+  background: rgba(16, 44, 82, 0.6);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(66, 121, 179, 0.3);
+  border-radius: 12px;
+  padding: 16px;
+  transition: all 0.2s ease;
+}
+
+.glass-card:hover {
+  border-color: var(--cyan);
+  box-shadow: 0 4px 20px rgba(53, 216, 255, 0.15);
+}
+
+/* Badges */
+.badge {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 99px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.badge-operational {
+  background: rgba(44, 224, 163, 0.15);
+  color: var(--green);
+  border: 1px solid rgba(44, 224, 163, 0.4);
+}
+
+.badge-warning {
+  background: rgba(245, 179, 66, 0.15);
+  color: var(--gold);
+  border: 1px solid rgba(245, 179, 66, 0.4);
+}
+
+.badge-critical {
+  background: rgba(255, 91, 121, 0.15);
+  color: var(--red);
+  border: 1px solid rgba(255, 91, 121, 0.4);
+}
+
+.badge-blue {
+  background: rgba(53, 216, 255, 0.15);
+  color: var(--cyan);
+  border: 1px solid rgba(53, 216, 255, 0.4);
+}
