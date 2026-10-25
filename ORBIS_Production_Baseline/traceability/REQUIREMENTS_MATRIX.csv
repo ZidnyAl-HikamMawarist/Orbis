@@ -1,0 +1,22 @@
+requirement_id,requirement,primary_component,verification,release_blocking
+FR-001,Authentication and company context,Laravel 13 Sanctum session auth + memberships,Feature tests login logout company switch and CSRF,yes
+FR-002,Tenant isolation,Policies + tenant-scoped queries + composite constraints,Cross-tenant negative tests on every resource,yes
+FR-003,Branches and departments,Organization module + scope_key uniqueness,Feature tests CRUD archive and same-company references,yes
+FR-004,Memberships and invitations,Membership + company_invitations module + policies,Permission matrix tests and 72h token hash expiry tests,yes
+FR-005,Projects,Project module + task-derived progress service,Validation tests and task-derived progress golden tests,yes
+FR-006,Tasks,Task module + ULID keys,CRUD authorization and validation tests,yes
+FR-007,Task lifecycle,Transition service + history table,Allowed/disallowed transition tests and transaction test,yes
+FR-008,Task comments,Comment module (plain-text),Authorization length XSS and tenant tests,yes
+FR-009,Alerts,Alert service + dedupe_key,Idempotency acknowledge/resolve and access tests,yes
+FR-010,Operational KPI monitoring,Operational KPI calculation service (5 core metrics),Golden data tests zero-denominator and timezone tests,yes
+FR-011,Reports and CSV export,Report queries/streaming export job,Filter consistency permission and CSV safety tests,yes
+FR-012,3D isometric world,React Three.js world adapter,Mouse/touch navigation and Three.js disposal tests,yes
+FR-013,Quick dashboard,Dashboard UI + summary API,Dashboard works without WebGL and data matches reports,yes
+FR-014,Search and filtering,Allowlisted API filters,Authorization and filter validation tests,yes
+FR-015,Auditability,Audit event service + least-privilege DB grants,Events emitted for sensitive changes; secrets absent,yes
+FR-016,Responsive UX,Responsive React UI + mobile touch barrier,360/390/768/1440 viewport checks and zoom enabled,yes
+FR-017,World configuration,World config service,Validation and authorization tests,yes
+FR-018,Data integrity,Database constraints + domain services,Migration/foreign key and invalid relationship tests,yes
+NFR-001,Performance targets (p95 <= 400ms),API/database/frontend profiling,OD-013 load profile benchmark against agreed targets,yes
+NFR-002,Security baseline,Application and deployment controls,Security review and dependency scanning,yes
+NFR-003,Recovery readiness (RPO 24h RTO 8h),Backup and operations plan,Successful restore and rollback rehearsal,yes

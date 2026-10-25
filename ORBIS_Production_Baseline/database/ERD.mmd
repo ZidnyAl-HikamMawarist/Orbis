@@ -1,0 +1,148 @@
+erDiagram
+    USERS ||--o{ COMPANY_USER : joins
+    COMPANIES ||--o{ COMPANY_USER : has
+    COMPANIES ||--o{ COMPANY_INVITATIONS : issues
+    COMPANY_USER ||--o{ COMPANY_INVITATIONS : creates
+    BRANCHES o|--o{ COMPANY_INVITATIONS : scopes
+    DEPARTMENTS o|--o{ COMPANY_INVITATIONS : scopes
+    COMPANIES ||--o{ BRANCHES : owns
+    COMPANIES ||--o{ DEPARTMENTS : owns
+    BRANCHES o|--o{ DEPARTMENTS : hosts
+    COMPANIES ||--o{ PROJECTS : owns
+    BRANCHES o|--o{ PROJECTS : scopes
+    DEPARTMENTS o|--o{ PROJECTS : scopes
+    COMPANY_USER o|--o{ PROJECTS : leads
+    COMPANIES ||--o{ TASKS : owns
+    PROJECTS o|--o{ TASKS : contains
+    BRANCHES o|--o{ TASKS : scopes
+    DEPARTMENTS o|--o{ TASKS : scopes
+    COMPANY_USER o|--o{ TASKS : assigned
+    COMPANY_USER ||--o{ TASK_STATUS_HISTORY : acts
+    TASKS ||--o{ TASK_STATUS_HISTORY : records
+    COMPANY_USER ||--o{ TASK_COMMENTS : writes
+    TASKS ||--o{ TASK_COMMENTS : has
+    COMPANIES ||--o{ ALERTS : owns
+    BRANCHES o|--o{ ALERTS : scopes
+    DEPARTMENTS o|--o{ ALERTS : scopes
+    PROJECTS o|--o{ ALERTS : relates
+    TASKS o|--o{ ALERTS : relates
+    COMPANY_USER o|--o{ ALERTS : acknowledges
+    COMPANIES ||--o{ KPI_DEFINITIONS : defines
+    COMPANIES ||--o{ KPI_SNAPSHOTS : measures
+    KPI_DEFINITIONS ||--o{ KPI_SNAPSHOTS : versions
+    BRANCHES o|--o{ KPI_SNAPSHOTS : scopes
+    DEPARTMENTS o|--o{ KPI_SNAPSHOTS : scopes
+    COMPANIES ||--o{ WORLD_CONFIGS : configures
+    BRANCHES o|--o{ WORLD_CONFIGS : locates
+    DEPARTMENTS o|--o{ WORLD_CONFIGS : locates
+    COMPANIES ||--o{ AUDIT_EVENTS : logs
+    COMPANY_USER o|--o{ AUDIT_EVENTS : performs
+
+    USERS {
+      char id PK
+      varchar name
+      varchar email UK
+      timestamp email_verified_at
+    }
+    COMPANIES {
+      char id PK
+      varchar name
+      varchar timezone
+      varchar status
+    }
+    COMPANY_USER {
+      char id PK
+      char company_id FK
+      char user_id FK
+      varchar role
+      varchar status
+    }
+    COMPANY_INVITATIONS {
+      char id PK
+      char company_id FK
+      varchar email
+      varchar role
+      char token_hash UK
+      timestamp expires_at
+      timestamp accepted_at
+    }
+    BRANCHES {
+      char id PK
+      char company_id FK
+      varchar name
+      varchar status
+    }
+    DEPARTMENTS {
+      char id PK
+      char company_id FK
+      char branch_id FK
+      varchar name
+      varchar scope_key UK
+    }
+    PROJECTS {
+      char id PK
+      char company_id FK
+      varchar name
+      varchar status
+      int progress_percent
+    }
+    TASKS {
+      char id PK
+      char company_id FK
+      char project_id FK
+      varchar status
+      varchar priority
+    }
+    TASK_STATUS_HISTORY {
+      char id PK
+      char company_id FK
+      char task_id FK
+      char actor_membership_id FK
+      varchar from_status
+      varchar to_status
+    }
+    TASK_COMMENTS {
+      char id PK
+      char company_id FK
+      char task_id FK
+      char author_membership_id FK
+      text body
+    }
+    ALERTS {
+      char id PK
+      char company_id FK
+      varchar severity
+      varchar status
+      varchar dedupe_key
+    }
+    KPI_DEFINITIONS {
+      char id PK
+      char company_id FK
+      varchar key
+      int definition_version
+    }
+    KPI_SNAPSHOTS {
+      char id PK
+      char company_id FK
+      char kpi_definition_id FK
+      decimal value_decimal
+      varchar freshness
+    }
+    WORLD_CONFIGS {
+      char id PK
+      char company_id FK
+      varchar entity_type
+      char branch_id FK
+      char department_id FK
+      decimal position_x
+      decimal position_y
+      decimal position_z
+    }
+    AUDIT_EVENTS {
+      char id PK
+      char company_id FK
+      char actor_membership_id FK
+      varchar action
+      varchar resource_type
+      char resource_id
+    }
